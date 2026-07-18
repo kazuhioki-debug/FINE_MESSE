@@ -3,12 +3,12 @@
   "name": "FINE - 20人だけのチャット",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "FINE_Brand_icon.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "icon-512.png",
+      "src": "FINE_Brand_icon.png",
       "type": "image/png",
       "sizes": "512x512"
     }
