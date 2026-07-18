@@ -8,25 +8,66 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #7494C4; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* 📱 全体の背景：優しく薄いオレンジ（アプリ風） */
+        body { 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            background-color: #FFF2E6; /* ★ここを薄いオレンジに変更 */
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
         
         /* ヘッダー */
-        header { background-color: #ffffff; color: #333; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; border-bottom: 1px solid #ddd; position: sticky; top: 0; }
+        header { 
+            background-color: #ffffff; 
+            color: #4A3E3D; /* 文字も少し温かみのある焦げ茶に */
+            padding: 15px; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 18px; 
+            border-bottom: 1px solid #FFE4CC; 
+            position: sticky; 
+            top: 0; 
+        }
         
         /* チャットタイムライン */
         #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
         .message { max-width: 75%; padding: 10px 14px; border-radius: 15px; font-size: 15px; line-height: 1.4; word-break: break-all; position: relative; }
         
-        /* 相手のメッセージ */
-        .message.received { background-color: #ffffff; color: #000000; align-self: flex-start; border-top-left-radius: 2px; }
+        /* 相手のメッセージ（白ベース） */
+        .message.received { 
+            background-color: #ffffff; 
+            color: #333333; 
+            align-self: flex-start; 
+            border-top-left-radius: 2px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* ほんのり影をつけて見やすく */
+        }
         
-        /* 自分のメッセージ */
-        .message.sent { background-color: #85E245; color: #000000; align-self: flex-end; border-top-right-radius: 2px; }
+        /* 🟢 自分のメッセージ：オレンジに馴染む優しいオリーブグリーン */
+        .message.sent { 
+            background-color: #A3B899; /* ★元の黄緑から、落ち着いた優しい緑に変更 */
+            color: #ffffff; /* 文字を白にして読みやすく */
+            align-self: flex-end; 
+            border-top-right-radius: 2px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
         
         /* 送信フォーム */
-        form { background-color: #ffffff; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #ddd; position: sticky; bottom: 0; }
-        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
-        button { background-color: #85E245; border: none; color: #333; font-weight: bold; padding: 0 20px; border-radius: 20px; font-size: 15px; cursor: pointer; }
+        form { background-color: #ffffff; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #FFE4CC; position: sticky; bottom: 0; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #EAD5C3; border-radius: 20px; font-size: 16px; outline: none; background-color: #FAFAFA; }
+        
+        /* 🟢 送信ボタンも同じ優しい緑に統一 */
+        button { 
+            background-color: #A3B899; /* ★ボタンの緑も変更 */
+            border: none; 
+            color: #ffffff; 
+            font-weight: bold; 
+            padding: 0 20px; 
+            border-radius: 20px; 
+            font-size: 15px; 
+            cursor: pointer; 
+        }
     </style>
 </head>
 <body>
