@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINE</title>
+    <!-- Supabaseを使うためのライブラリを読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #7494C4; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* ヘッダー */
+        header { background-color: #ffffff; color: #333; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; border-bottom: 1px solid #ddd; position: sticky; top: 0; }
+        
+        /* チャットタイムライン */
+        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+        .message { max-width: 75%; padding: 10px 14px; border-radius: 15px; font-size: 15px; line-height: 1.4; word-break: break-all; position: relative; }
+        
+        /* 相手のメッセージ */
+        .message.received { background-color: #ffffff; color: #000000; align-self: flex-start; border-top-left-radius: 2px; }
+        
+        /* 自分のメッセージ */
+        .message.sent { background-color: #85E245; color: #000000; align-self: flex-end; border-top-right-radius: 2px; }
+        
+        /* 送信フォーム */
+        form { background-color: #ffffff; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #ddd; position: sticky; bottom: 0; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
+        button { background-color: #85E245; border: none; color: #333; font-weight: bold; padding: 0 20px; border-radius: 20px; font-size: 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>FINE チャットルーム</header>
+
+    <div id="chat-container">
+        <!-- ここにメッセージがリアルタイムで追加されます -->
+        <div class="message received">ここに相手からのメッセージが入ります</div>
+        <div class="message sent">ここに自分が送ったメッセージが入ります</div>
+    </div>
+
+    <form id="message-form" onsubmit="sendMessage(event)">
+        <input type="text" id="message-input" placeholder="メッセージを入力..." autocomplete="off" required>
+        <button type="submit">送信</button>
+    </form>
+
+    <!-- 「ファイン！」の通知音用オーディオタグ -->
+    <audio id="fine-sound" src="fine.mp3" preload="auto"></audio>
+
+    <script>
+        // 【重要】あなたのSupabaseプロジェクトのURLとanonキーに書き換えてください
+        const SUPABASE_URL = "https://your-project-id.supabase.co";
+        const SUPABASE_ANON_KEY = "your-supabase-anon-key";
+        
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const fineSound = document.getElementById('fine-sound');
+
+        // 仮のユーザーID (本来はログイン機能から取得します)
+        const currentUserId = "my-user-id-123"; 
+        const targetRoomId = "your-room-uuid"; // テストするトークルームのID
+
+        // 1. ページを開いたときに過去のメッセージを読み込む
+        async function loadMessages() {
+            chatContainer.innerHTML = ''; // 一旦クリア
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('room_id', targetRoomId)
+                .order('created_at', { ascending: true });
+
+            if (data) {
+                data.forEach(msg => appendMessage(msg));
+            }
+        }
+
+        // 2. 画面にメッセージを追加する
+        function appendMessage(msg) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            
+            if (msg.sender_id === currentUserId) {
+                msgDiv.classList.add('sent');
+            } else {
+                msgDiv.classList.add('received');
+                // 自分以外のメッセージが来たら「ファイン！」と鳴らす（画面を開いている時用）
+                fineSound.play().catch(e => console.log("音再生エラー:", e));
+            }
+            
+            msgDiv.innerText = msg.message_text;
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight; // 最下部へスクロール
+        }
+
+        // 3. メッセージを送信する
+        async function sendMessage(event) {
+            event.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            const { error } = await supabase
+                .from('messages')
+                .insert([
+                    { room_id: targetRoomId, sender_id: currentUserId, message_text: text }
+                ]);
+
+            if (!error) {
+                messageInput.value = '';
+            } else {
+                alert('送信に失敗しました: ' + error.message);
+            }
+        }
+
+        // 4. 【肝】Supabaseのリアルタイム機能をONにして、DBの変更を監視する
+        supabase
+            .channel('public:messages')
+            .on('postgres_changes', { event: 'INSERT', filter: `room_id=eq.${targetRoomId}`, schema: 'public', table: 'messages' }, payload => {
+                appendMessage(payload.new);
+            })
+            .subscribe();
+
+        // 初期読み込みを実行
+        loadMessages();
+    </script>
+</body>
+</html>

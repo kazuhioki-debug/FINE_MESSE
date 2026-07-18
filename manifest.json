@@ -1,0 +1,21 @@
+{
+  "short_name": "FINE",
+  "name": "FINE - 20人だけのチャット",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#7494C4",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "orientation": "portrait"
+}
