@@ -103,14 +103,13 @@
         const currentUserId = "my-user-id-123"; 
         const targetRoomId = "your-room-uuid"; // テストするトークルームのID
 
-        // 1. ページを開いたときに過去のメッセージを読み込む
+// 1. ページを開いたときに過去のメッセージを読み込む
         async function loadMessages() {
             chatContainer.innerHTML = ''; // 一旦クリア
             const { data, error } = await supabase
                 .from('messages')
                 .select('*')
-                .eq('room_id', targetRoomId)
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: true }); // room_idの絞り込みを外しました
 
             if (data) {
                 data.forEach(msg => appendMessage(msg));
@@ -122,17 +121,17 @@
             const msgDiv = document.createElement('div');
             msgDiv.classList.add('message');
             
-            if (msg.sender_id === currentUserId) {
+            // 今回はシンプルに username が自分かどうかで判定します
+            if (msg.username === currentUserId) {
                 msgDiv.classList.add('sent');
             } else {
                 msgDiv.classList.add('received');
-                // 自分以外のメッセージが来たら「ファイン！」と鳴らす（画面を開いている時用）
                 fineSound.play().catch(e => console.log("音再生エラー:", e));
             }
             
-            msgDiv.innerText = msg.message_text;
+            msgDiv.innerText = msg.text; // message_text から text に修正
             chatContainer.appendChild(msgDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight; // 最下部へスクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         // 3. メッセージを送信する
@@ -144,7 +143,7 @@
             const { error } = await supabase
                 .from('messages')
                 .insert([
-                    { room_id: targetRoomId, sender_id: currentUserId, message_text: text }
+                    { username: currentUserId, text: text } // テーブルの列名に合わせました
                 ]);
 
             if (!error) {
@@ -154,10 +153,10 @@
             }
         }
 
-        // 4. 【肝】Supabaseのリアルタイム機能をONにして、DBの変更を監視する
+        // 4. Supabaseのリアルタイム機能をONにする
         supabase
             .channel('public:messages')
-            .on('postgres_changes', { event: 'INSERT', filter: `room_id=eq.${targetRoomId}`, schema: 'public', table: 'messages' }, payload => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
                 appendMessage(payload.new);
             })
             .subscribe();
