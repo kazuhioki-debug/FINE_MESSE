@@ -9,10 +9,10 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        /* 📱 全体の背景：優しく薄いオレンジ（アプリ風） */
+        /* 📱 全体の背景：優しく薄いオレンジ */
         body { 
             font-family: 'Helvetica Neue', Arial, sans-serif; 
-            background-color: #FFF2E6; /* ★ここを薄いオレンジに変更 */
+            background-color: #FFF2E6; 
             display: flex; 
             flex-direction: column; 
             height: 100vh; 
@@ -21,7 +21,7 @@
         /* ヘッダー */
         header { 
             background-color: #ffffff; 
-            color: #4A3E3D; /* 文字も少し温かみのある焦げ茶に */
+            color: #4A3E3D; 
             padding: 15px; 
             text-align: center; 
             font-weight: bold; 
@@ -41,13 +41,13 @@
             color: #333333; 
             align-self: flex-start; 
             border-top-left-radius: 2px; 
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* ほんのり影をつけて見やすく */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
         }
         
-        /* 🟢 自分のメッセージ：オレンジに馴染む優しいオリーブグリーン */
+        /* 🟢 自分のメッセージ：オリーブグリーン */
         .message.sent { 
-            background-color: #A3B899; /* ★元の黄緑から、落ち着いた優しい緑に変更 */
-            color: #ffffff; /* 文字を白にして読みやすく */
+            background-color: #A3B899; 
+            color: #ffffff; 
             align-self: flex-end; 
             border-top-right-radius: 2px; 
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
@@ -57,9 +57,8 @@
         form { background-color: #ffffff; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #FFE4CC; position: sticky; bottom: 0; }
         input[type="text"] { flex: 1; padding: 12px; border: 1px solid #EAD5C3; border-radius: 20px; font-size: 16px; outline: none; background-color: #FAFAFA; }
         
-        /* 🟢 送信ボタンも同じ優しい緑に統一 */
         button { 
-            background-color: #A3B899; /* ★ボタンの緑も変更 */
+            background-color: #A3B899; 
             border: none; 
             color: #ffffff; 
             font-weight: bold; 
@@ -74,26 +73,21 @@
 
     <header>FINE チャットルーム</header>
 
-    <div id="chat-container">
-        <!-- ここにメッセージがリアルタイムで追加されます -->
-        <div class="message received">ここに相手からのメッセージが入ります</div>
-        <div class="message sent">ここに自分が送ったメッセージが入ります</div>
-    </div>
+    <div id="chat-container"></div>
 
     <form id="message-form" onsubmit="sendMessage(event)">
         <input type="text" id="message-input" placeholder="メッセージを入力..." autocomplete="off" required>
         <button type="submit">送信</button>
     </form>
 
-    <!-- 「ファイン！」の通知音用オーディオタグ -->
     <audio id="fine-sound" src="fine.mp3" preload="auto"></audio>
 
     <script>
-        // 【重要】あなたのSupabaseプロジェクトのURLとanonキーに書き換えてください
-const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
+        const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_GFNwsm5bZgigv1FoMTKzYA_dooFk8r_";
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // 変数名の衝突を防ぐため db という名前に変更
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message-input');
@@ -101,20 +95,29 @@ const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
 
         const currentUserId = prompt("ユーザー名を入力してください", "ゲスト") || "ゲスト";
 
-        // 1. ページを開いたときに過去のメッセージを読み込む
+        // 1. 過去のメッセージ読み込み
         async function loadMessages() {
-            chatContainer.innerHTML = ''; 
-            const { data, error } = await supabase
-                .from('messages')
-                .select('*')
-                .order('created_at', { ascending: true });
+            try {
+                chatContainer.innerHTML = ''; 
+                const { data, error } = await db
+                    .from('messages')
+                    .select('*')
+                    .order('created_at', { ascending: true });
 
-            if (data) {
-                data.forEach(msg => appendMessage(msg));
+                if (error) {
+                    alert('読み込みエラー: ' + error.message);
+                    return;
+                }
+
+                if (data) {
+                    data.forEach(msg => appendMessage(msg));
+                }
+            } catch (err) {
+                alert('通信エラー: ' + err.message);
             }
         }
 
-        // 2. 画面にメッセージを追加する
+        // 2. 画面にメッセージ追加
         function appendMessage(msg) {
             const msgDiv = document.createElement('div');
             msgDiv.classList.add('message');
@@ -131,42 +134,39 @@ const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // 3. メッセージを送信する（送信成功時に自分の画面にも直接追加！）
+        // 3. メッセージ送信
         async function sendMessage(event) {
-            event.preventDefault();
+            event.preventDefault(); // ページの再読み込みを防止
             const text = messageInput.value.trim();
             if (!text) return;
 
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from('messages')
                 .insert([
                     { username: currentUserId, text: text }
                 ])
-                .select(); // 保存したデータを受け取る
+                .select();
 
             if (error) {
                 alert('送信エラー: ' + error.message);
             } else {
                 messageInput.value = '';
-                // 送信成功したら自分側の画面に直接メッセージを表示！
                 if (data && data.length > 0) {
                     appendMessage(data[0]);
                 }
             }
         }
 
-        // 4. Supabaseのリアルタイム受信
-        supabase
-            .channel('public:messages')
+        // 4. リアルタイム受信
+        db.channel('public:messages')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                // 自分が送ったやつ以外の新着メッセージだけ追加
                 if (payload.new.username !== currentUserId) {
                     appendMessage(payload.new);
                 }
             })
             .subscribe();
 
-        // 初期読み込みを実行
+        // 初期読み込み実行
         loadMessages();
     </script>
 </body>
