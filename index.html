@@ -134,22 +134,29 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // 3. メッセージを送信する
+// 3. メッセージを送信する
         async function sendMessage(event) {
             event.preventDefault();
             const text = messageInput.value.trim();
             if (!text) return;
 
-            const { error } = await supabase
+            // 送信してみる
+            const { data, error } = await supabase
                 .from('messages')
                 .insert([
-                    { username: currentUserId, text: text } // テーブルの列名に合わせました
-                ]);
+                    { username: currentUserId, text: text }
+                ])
+                .select(); // ★ここを追加（保存できたデータを返すようにする）
 
-            if (!error) {
-                messageInput.value = '';
+            if (error) {
+                // エラーが出たら画面に理由を表示！
+                alert('Supabaseエラー: ' + error.message);
             } else {
-                alert('送信に失敗しました: ' + error.message);
+                messageInput.value = '';
+                // 画面に即座に追加してみる
+                if (data && data.length > 0) {
+                    appendMessage(data[0]);
+                }
             }
         }
 
