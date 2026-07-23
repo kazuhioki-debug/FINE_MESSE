@@ -67,6 +67,62 @@
             font-size: 15px; 
             cursor: pointer; 
         }
+
+        /* ------------------------------------
+           ✨ おしゃれな名前入力モーダル（ポップアップ）
+        ------------------------------------ */
+        #name-modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: rgba(74, 62, 61, 0.4); /* うっすら暗く */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px); /* 背景をほんのりぼかす */
+        }
+
+        .name-modal {
+            background-color: #ffffff;
+            width: 85%;
+            max-width: 320px;
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .name-modal h3 {
+            color: #4A3E3D;
+            font-size: 17px;
+            margin-bottom: 8px;
+        }
+
+        .name-modal p {
+            color: #8C7A78;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .name-modal input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #EAD5C3;
+            border-radius: 12px;
+            font-size: 15px;
+            outline: none;
+            background-color: #FAFAFA;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .name-modal button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 15px;
+        }
     </style>
 </head>
 <body>
@@ -80,20 +136,39 @@
         <button type="submit">送信</button>
     </form>
 
+    <!-- ✨ おしゃれな名前入力ポップアップ -->
+    <div id="name-modal-overlay">
+        <div class="name-modal">
+            <h3>ようこそ！</h3>
+            <p>チャットで使うお名前を教えてください</p>
+            <input type="text" id="modal-username-input" placeholder="例：ゲスト" autofocus>
+            <button type="button" onclick="saveUsername()">参加する</button>
+        </div>
+    </div>
+
     <audio id="fine-sound" src="fine.mp3" preload="auto"></audio>
 
     <script>
         const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_GFNwsm5bZgigv1FoMTKzYA_dooFk8r_";
         
-        // 変数名の衝突を防ぐため db という名前に変更
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message-input');
         const fineSound = document.getElementById('fine-sound');
 
-        const currentUserId = prompt("ユーザー名を入力してください", "ゲスト") || "ゲスト";
+        let currentUserId = "ゲスト";
+
+        // 名前を保存してポップアップを閉じる
+        function saveUsername() {
+            const inputVal = document.getElementById('modal-username-input').value.trim();
+            if (inputVal) {
+                currentUserId = inputVal;
+            }
+            document.getElementById('name-modal-overlay').style.display = 'none';
+            loadMessages(); // 名前が決まったら読み込み開始
+        }
 
         // 1. 過去のメッセージ読み込み
         async function loadMessages() {
@@ -104,16 +179,11 @@
                     .select('*')
                     .order('created_at', { ascending: true });
 
-                if (error) {
-                    alert('読み込みエラー: ' + error.message);
-                    return;
-                }
-
                 if (data) {
                     data.forEach(msg => appendMessage(msg));
                 }
             } catch (err) {
-                alert('通信エラー: ' + err.message);
+                console.log('エラー:', err);
             }
         }
 
@@ -136,7 +206,7 @@
 
         // 3. メッセージ送信
         async function sendMessage(event) {
-            event.preventDefault(); // ページの再読み込みを防止
+            event.preventDefault();
             const text = messageInput.value.trim();
             if (!text) return;
 
@@ -147,9 +217,7 @@
                 ])
                 .select();
 
-            if (error) {
-                alert('送信エラー: ' + error.message);
-            } else {
+            if (!error) {
                 messageInput.value = '';
                 if (data && data.length > 0) {
                     appendMessage(data[0]);
@@ -165,9 +233,6 @@
                 }
             })
             .subscribe();
-
-        // 初期読み込み実行
-        loadMessages();
     </script>
 </body>
 </html>
