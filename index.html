@@ -93,7 +93,7 @@
         const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_GFNwsm5bZgigv1FoMTKzYA_dooFk8r_";
         
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message-input');
