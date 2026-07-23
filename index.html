@@ -90,26 +90,24 @@
 
     <script>
         // 【重要】あなたのSupabaseプロジェクトのURLとanonキーに書き換えてください
-        const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
+const SUPABASE_URL = "https://bsgtorlxzafuudqyrpma.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_GFNwsm5bZgigv1FoMTKzYA_dooFk8r_";
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message-input');
         const fineSound = document.getElementById('fine-sound');
 
-// ★ここを書き換えます！ページを開いたときに名前を入力してもらうようにします
         const currentUserId = prompt("ユーザー名を入力してください", "ゲスト") || "ゲスト";
-        const targetRoomId = "your-room-uuid";
 
-// 1. ページを開いたときに過去のメッセージを読み込む
+        // 1. ページを開いたときに過去のメッセージを読み込む
         async function loadMessages() {
-            chatContainer.innerHTML = ''; // 一旦クリア
+            chatContainer.innerHTML = ''; 
             const { data, error } = await supabase
                 .from('messages')
                 .select('*')
-                .order('created_at', { ascending: true }); // room_idの絞り込みを外しました
+                .order('created_at', { ascending: true });
 
             if (data) {
                 data.forEach(msg => appendMessage(msg));
@@ -121,7 +119,6 @@
             const msgDiv = document.createElement('div');
             msgDiv.classList.add('message');
             
-            // 今回はシンプルに username が自分かどうかで判定します
             if (msg.username === currentUserId) {
                 msgDiv.classList.add('sent');
             } else {
@@ -129,42 +126,43 @@
                 fineSound.play().catch(e => console.log("音再生エラー:", e));
             }
             
-            msgDiv.innerText = msg.text; // message_text から text に修正
+            msgDiv.innerText = msg.text; 
             chatContainer.appendChild(msgDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-// 3. メッセージを送信する
+        // 3. メッセージを送信する（送信成功時に自分の画面にも直接追加！）
         async function sendMessage(event) {
             event.preventDefault();
             const text = messageInput.value.trim();
             if (!text) return;
 
-            // 送信してみる
             const { data, error } = await supabase
                 .from('messages')
                 .insert([
                     { username: currentUserId, text: text }
                 ])
-                .select(); // ★ここを追加（保存できたデータを返すようにする）
+                .select(); // 保存したデータを受け取る
 
             if (error) {
-                // エラーが出たら画面に理由を表示！
-                alert('Supabaseエラー: ' + error.message);
+                alert('送信エラー: ' + error.message);
             } else {
                 messageInput.value = '';
-                // 画面に即座に追加してみる
+                // 送信成功したら自分側の画面に直接メッセージを表示！
                 if (data && data.length > 0) {
                     appendMessage(data[0]);
                 }
             }
         }
 
-        // 4. Supabaseのリアルタイム機能をONにする
+        // 4. Supabaseのリアルタイム受信
         supabase
             .channel('public:messages')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                appendMessage(payload.new);
+                // 自分が送ったやつ以外の新着メッセージだけ追加
+                if (payload.new.username !== currentUserId) {
+                    appendMessage(payload.new);
+                }
             })
             .subscribe();
 
